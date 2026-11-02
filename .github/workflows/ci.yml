@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        fcitx5: [ON, OFF]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
+          if [ "${{ matrix.fcitx5 }}" = "ON" ]; then
+            sudo apt-get install -y libfcitx5core-dev libfcitx5utils-dev libfcitx5config-dev
+          fi
+
+      - name: Configure
+        run: cmake -S . -B build -DBUILD_FCITX5=${{ matrix.fcitx5 }}
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
